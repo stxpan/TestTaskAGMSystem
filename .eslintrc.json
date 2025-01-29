@@ -1,0 +1,18 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:effector/recommended",
+    "plugin:effector/scope",
+    "plugin:effector/react"
+  ],
+  "plugins": [
+    "prettier",
+    "effector"
+  ],
+  "rules": {
+    "prettier/prettier": "error"
+  },
+  "ignorePatterns": [
+    "src/shared/api/generated/**"
+  ]
+}
