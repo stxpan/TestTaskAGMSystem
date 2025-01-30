@@ -11,7 +11,7 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
 
   pageExtensions: ['page.mdx', 'page.md', 'page.jsx', 'page.js', 'page.tsx', 'page.ts'],
 
