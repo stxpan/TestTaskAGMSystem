@@ -20,6 +20,10 @@ import VectorSource from 'ol/source/Vector';
 import Icon from 'ol/style/Icon';
 import Style from 'ol/style/Style';
 
+import { Panorama } from '@/features/panorama/panorama';
+
+import { Dialog, DialogContent } from '@/shared/components/ui/dialog';
+
 const semaphores = semaphoresData as Semaphores;
 
 interface SemaphorePopupContent {
@@ -164,6 +168,13 @@ function HomePage() {
           </div>
         </div>
       )}
+      <Dialog open>
+        <DialogContent className="left-0 top-0 block h-full w-full max-w-[900px] translate-x-0 translate-y-0 gap-0 border-0 p-0">
+          {/* <div className="fixed left-0 top-0 z-50 h-full max-h-[900px] w-full max-w-[900px]"> */}
+          <Panorama />
+          {/* </div> */}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
