@@ -6,6 +6,12 @@ Get started with Next.js and React in seconds.
 
 This is a template with all you need for your next web application. Aims for developers who really care about code quality, architecture, security and all the best practices in frontend.
 
+## How start in ur device
+
+1. clone repository
+2. install dependencies
+3. use start:dev 
+
 
 ## Features
 
