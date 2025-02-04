@@ -1,6 +1,6 @@
 import { env } from '@/shared/config/env.mjs';
 
-export const APP_TITLE = 'maehwa';
+export const APP_TITLE = 'Тестовое Хапин';
 
 interface GetAlternateHrefLinksProps {
   asPath: string;

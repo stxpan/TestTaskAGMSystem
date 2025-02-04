@@ -7,7 +7,11 @@ import { Button } from '@/shared/components/ui/button';
 
 const store = [{ name: 'inside', color: 'lightblue', position: [15, 0, 0], url: '/panorama.jpg', link: 0 }];
 
-const Dome = ({ texture }) => {
+interface DomeProps {
+  texture: THREE.Texture;
+}
+
+const Dome = ({ texture }: DomeProps) => {
   return (
     <group>
       <mesh>
@@ -25,7 +29,7 @@ const Portals = () => {
     THREE.TextureLoader,
     store.map((entry) => entry.url),
   );
-  return <Dome onClick={() => set(link)} {...props} texture={maps[which]} />;
+  return <Dome {...props} texture={maps[which]} />;
 };
 
 export const Panorama = () => {

@@ -28,7 +28,7 @@ export const PageSeo = (props: PageSeoProps) => {
       additionalMetaTags={[
         {
           name: 'apple-mobile-web-app-title',
-          content: 'Maehwa',
+          content: 'Тестовое Хапин',
         },
       ]}
       additionalLinkTags={[
