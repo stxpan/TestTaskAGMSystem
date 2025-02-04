@@ -1,4 +1,5 @@
 import React, { SetStateAction, useEffect, useRef, useState } from 'react';
+import { decode, encode } from '@googlemaps/polyline-codec';
 import { debounce } from 'es-toolkit';
 import { Map, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
@@ -7,24 +8,30 @@ import OSM from 'ol/source/OSM';
 
 import { Properties, Semaphores } from '@/shared/types/semaphores';
 
+import linesData from '../entities/line.json';
+import roadCrosData from '../entities/road_cros.json';
 import semaphoresData from '../entities/semaphores.json';
 
 import 'ol/ol.css';
 
-import { toStringHDMS } from 'ol/coordinate';
-import Feature, { FeatureLike } from 'ol/Feature';
+import Feature from 'ol/Feature';
+import Polyline from 'ol/format/Polyline.js';
 import Point from 'ol/geom/Point';
 import VectorLayer from 'ol/layer/Vector';
-import { toLonLat } from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import Icon from 'ol/style/Icon';
+import Stroke from 'ol/style/Stroke';
 import Style from 'ol/style/Style';
 
 import { Panorama } from '@/features/panorama/panorama';
 
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog';
+import { Lines } from '@/shared/types/lines';
+import { RoadCros } from '@/shared/types/roadCros';
 
 const semaphores = semaphoresData as Semaphores;
+const lines = linesData as Lines;
+const roadCros = roadCrosData as RoadCros;
 
 interface SemaphorePopupContent {
   geometry: Point;
@@ -66,12 +73,51 @@ function HomePage() {
       return iconFeatures;
     });
 
-    const vectorSource = new VectorSource({
+    const polylines = lines.features.map((feature) => {
+      const polyline = encode(
+        feature.geometry.coordinates.map((coord) => [coord[1], coord[0]]),
+        6,
+      );
+
+      const line = new Polyline({
+        factor: 1e6,
+      }).readGeometry(polyline, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: 'EPSG:4326',
+      });
+
+      const lineFeature = new Feature({
+        type: 'route',
+        geometry: line,
+        properties: feature.properties,
+      });
+
+      return lineFeature;
+    });
+
+    const styles = {
+      route: new Style({
+        stroke: new Stroke({
+          width: 4,
+          color: 'red',
+        }),
+      }),
+    };
+
+    const vectorLayer = new VectorLayer({
+      source: new VectorSource({
+        features: polylines,
+      }),
+      style: function (feature) {
+        return styles[feature.get('type')];
+      },
+    });
+    const semaphoreSource = new VectorSource({
       features: allSemaphores,
     });
 
-    const vectorLayer = new VectorLayer({
-      source: vectorSource,
+    const semaphoreLayer = new VectorLayer({
+      source: semaphoreSource,
     });
 
     const popupContainer = document.getElementById('popup');
@@ -87,7 +133,7 @@ function HomePage() {
 
     const map = new Map({
       target: mapElement.current,
-      layers: [osmLayer, vectorLayer],
+      layers: [osmLayer, vectorLayer, semaphoreLayer],
       view: new View({
         projection: 'EPSG:4326',
         center: [38.987857582, 45.026964681],
@@ -109,7 +155,6 @@ function HomePage() {
 
       setSemaphorePopupContent(feature?.getProperties() as SemaphorePopupContent);
       setSemaphorePopupIsOpen(!semaphorePopupIsOpen);
-      console.log(feature?.getProperties());
     });
 
     const debouncedPopup = debounce((coordinate, isHit) => {
@@ -168,13 +213,11 @@ function HomePage() {
           </div>
         </div>
       )}
-      <Dialog open>
-        <DialogContent className="left-0 top-0 block h-full w-full max-w-[900px] translate-x-0 translate-y-0 gap-0 border-0 p-0">
-          {/* <div className="fixed left-0 top-0 z-50 h-full max-h-[900px] w-full max-w-[900px]"> */}
+      {/* <Dialog open>
+        <DialogContent className="h-full w-full max-w-[900px] gap-0 border-0 p-4 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100">
           <Panorama />
-          {/* </div> */}
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 }

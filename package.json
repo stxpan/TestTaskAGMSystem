@@ -25,6 +25,7 @@
     "@effector/reflect": "^9.2.0",
     "@farfetched/core": "^0.12.8",
     "@fontsource/inter": "^5.1.0",
+    "@googlemaps/polyline-codec": "^1.0.28",
     "@hookform/resolvers": "^3.9.0",
     "@neodx/log": "^0.4.1",
     "@next-safe/middleware": "^0.10.0",
