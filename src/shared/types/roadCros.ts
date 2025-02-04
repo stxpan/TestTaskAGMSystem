@@ -1,13 +1,13 @@
-interface Properties {
-  roadid: string;
-  road_code: number;
-  km_beg: number;
+export interface RoadCrosProperties {
+  roadid: string; //
+  road_code: number; //
+  km_beg: number; //
   k_s025_1: string;
   angle: number | null;
   name: string;
   width: number;
-  create_date: null;
-  delete_date: null;
+  create_date: null; //
+  delete_date: null; //
 }
 
 interface Geometry {
@@ -31,7 +31,7 @@ interface Features {
   has_files: boolean;
   has_images: boolean;
   geometry: Geometry;
-  properties: Properties;
+  properties: RoadCrosProperties;
 }
 export interface RoadCros {
   crs: null;

@@ -3,7 +3,7 @@ interface Geometry {
   coordinates: [number, number, number];
 }
 
-export interface Properties {
+export interface SemaphoreProperties {
   road_code: number;
   roadid: string;
   vertical_order: number;
@@ -23,7 +23,7 @@ interface Features {
   has_files: boolean;
   has_images: boolean;
   geometry: Geometry;
-  properties: Properties;
+  properties: SemaphoreProperties;
 }
 
 export interface Semaphores {

@@ -2,11 +2,14 @@ import React, { SetStateAction, useEffect, useRef, useState } from 'react';
 import { decode, encode } from '@googlemaps/polyline-codec';
 import { debounce } from 'es-toolkit';
 import { Map, View } from 'ol';
+import GeoJSON from 'ol/format/GeoJSON.js';
+import { defaults } from 'ol/interaction/defaults';
+import DoubleClickZoom from 'ol/interaction/DoubleClickZoom.js';
 import TileLayer from 'ol/layer/Tile';
 import Overlay from 'ol/Overlay.js';
 import OSM from 'ol/source/OSM';
 
-import { Properties, Semaphores } from '@/shared/types/semaphores';
+import { SemaphoreProperties, Semaphores } from '@/shared/types/semaphores';
 
 import linesData from '../entities/line.json';
 import roadCrosData from '../entities/road_cros.json';
@@ -16,9 +19,11 @@ import 'ol/ol.css';
 
 import Feature from 'ol/Feature';
 import Polyline from 'ol/format/Polyline.js';
+import { Polygon } from 'ol/geom';
 import Point from 'ol/geom/Point';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
+import Fill from 'ol/style/Fill';
 import Icon from 'ol/style/Icon';
 import Stroke from 'ol/style/Stroke';
 import Style from 'ol/style/Style';
@@ -26,8 +31,8 @@ import Style from 'ol/style/Style';
 import { Panorama } from '@/features/panorama/panorama';
 
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog';
-import { Lines } from '@/shared/types/lines';
-import { RoadCros } from '@/shared/types/roadCros';
+import { Lines, LinesProperties } from '@/shared/types/lines';
+import { RoadCros, RoadCrosProperties } from '@/shared/types/roadCros';
 
 const semaphores = semaphoresData as Semaphores;
 const lines = linesData as Lines;
@@ -36,14 +41,32 @@ const roadCros = roadCrosData as RoadCros;
 interface SemaphorePopupContent {
   geometry: Point;
   name: number;
-  properties: Properties;
+  properties: SemaphoreProperties | RoadCrosProperties | LinesProperties;
 }
+const isSemaphoreProperties = (
+  properties: SemaphoreProperties | RoadCrosProperties | LinesProperties,
+): properties is SemaphoreProperties => {
+  return 'vertical_order' in properties;
+};
+
+const isLinesProperties = (
+  properties: SemaphoreProperties | RoadCrosProperties | LinesProperties,
+): properties is LinesProperties => {
+  return 'km_end' in properties;
+};
+
+const isRoadCrosProperties = (
+  properties: SemaphoreProperties | RoadCrosProperties | LinesProperties,
+): properties is RoadCrosProperties => {
+  return 'k_s025_1' in properties;
+};
 
 function HomePage() {
   const mapElement = useRef();
   const [coordinateForPopup, setCoordinateForPopup] = useState([0, 0]);
   const [semaphorePopupIsOpen, setSemaphorePopupIsOpen] = useState(false);
-  const [semaphorePopupContent, setSemaphorePopupContent] = useState<SemaphorePopupContent | undefined>(undefined);
+  const [popupContent, setSemaphorePopupContent] = useState<SemaphorePopupContent | undefined>(undefined);
+  const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const osmLayer = new TileLayer({
@@ -71,6 +94,36 @@ function HomePage() {
       });
       iconFeatures.setStyle(iconStyle);
       return iconFeatures;
+    });
+
+    const allRoadCros = roadCros.features.map((roadCros) => {
+      const roadCrosFeatures = new Feature({
+        geometry: new Polygon(roadCros.geometry.coordinates),
+        name: roadCros.id,
+        properties: {
+          ...roadCros.properties,
+        },
+      });
+      return roadCrosFeatures;
+    });
+
+    const allRoadCrosStyle = new Style({
+      stroke: new Stroke({
+        color: 'blue',
+        width: 3,
+      }),
+      fill: new Fill({
+        color: 'rgba(0, 0, 255, 0.1)',
+      }),
+    });
+
+    const source = new VectorSource({
+      features: allRoadCros,
+    });
+
+    const allRoadCrosLayer = new VectorLayer({
+      source: source,
+      style: allRoadCrosStyle,
     });
 
     const polylines = lines.features.map((feature) => {
@@ -133,11 +186,14 @@ function HomePage() {
 
     const map = new Map({
       target: mapElement.current,
-      layers: [osmLayer, vectorLayer, semaphoreLayer],
+      layers: [osmLayer, vectorLayer, semaphoreLayer, allRoadCrosLayer],
       view: new View({
         projection: 'EPSG:4326',
         center: [38.987857582, 45.026964681],
         zoom: 15,
+      }),
+      interactions: defaults({
+        doubleClickZoom: false,
       }),
       overlays: [popupOverlay],
     });
@@ -155,6 +211,15 @@ function HomePage() {
 
       setSemaphorePopupContent(feature?.getProperties() as SemaphorePopupContent);
       setSemaphorePopupIsOpen(!semaphorePopupIsOpen);
+    });
+
+    map.on('dblclick', function (event) {
+      const hit = map.hasFeatureAtPixel(event.pixel);
+      if (!hit) {
+        return;
+      }
+
+      setDialogIsOpen(true);
     });
 
     const debouncedPopup = debounce((coordinate, isHit) => {
@@ -198,26 +263,56 @@ function HomePage() {
         </div>
       </div>
 
-      {semaphorePopupIsOpen && semaphorePopupContent && (
+      {semaphorePopupIsOpen && popupContent && (
         <div
           id="semaphorePopup"
           className="absolute bottom-0 right-0 w-[300px] rounded-xl rounded-br-none rounded-tr-none bg-black p-4"
         >
           <div id="semaphorePopup-content" className="flex flex-col">
-            <span>Create date: {semaphorePopupContent?.properties.create_date || 'Неизвестно'}</span>
-            <span>Delete date: {semaphorePopupContent.properties.delete_date || 'Неизвестно'}</span>
-            <span>Km Beg: {semaphorePopupContent.properties.km_beg || 'Неизвестно'}</span>
-            <span>Road сode: {semaphorePopupContent.properties.road_code}</span>
-            <span>Road id: {semaphorePopupContent.properties.roadid || 'Неизвестно'}</span>
-            <span>Vertical Order: {semaphorePopupContent.properties.vertical_order || 'Неизвестно'}</span>
+            {isSemaphoreProperties(popupContent.properties) && (
+              <>
+                <span>Road сode: {popupContent.properties.road_code}</span>
+                <span>Road id: {popupContent.properties.roadid || 'Неизвестно'}</span>
+                <span>Km Beg: {popupContent.properties.km_beg || 'Неизвестно'}</span>
+                <span>Vertical Order: {popupContent.properties.vertical_order || 'Неизвестно'}</span>
+                <span>Create date: {popupContent?.properties.create_date ?? 'Неизвестно'}</span>
+                <span>Delete date: {popupContent.properties.delete_date ?? 'Неизвестно'}</span>
+              </>
+            )}
+
+            {isLinesProperties(popupContent.properties) && (
+              <>
+                <span>Road id: {popupContent.properties.roadid || 'Неизвестно'}</span>
+                <span>Road сode: {popupContent.properties.road_code}</span>
+                <span>Km Beg: {popupContent.properties.km_beg || 'Неизвестно'}</span>
+                <span>Km End: {popupContent.properties.km_end || 'Неизвестно'}</span>
+                <span>Create date: {popupContent?.properties.create_date ?? 'Неизвестно'}</span>
+                <span>Delete date: {popupContent.properties.delete_date ?? 'Неизвестно'}</span>
+              </>
+            )}
+
+            {isRoadCrosProperties(popupContent.properties) && (
+              <>
+                <span>Road id: {popupContent.properties.roadid || 'Неизвестно'}</span>
+                <span>Road сode: {popupContent.properties.road_code}</span>
+                <span>Km Beg: {popupContent.properties.km_beg || 'Неизвестно'}</span>
+                <span>K_s025_1: {popupContent.properties.k_s025_1}</span>
+                <span>Angle: {popupContent.properties.angle ?? 'Неизвестно'}</span>
+                <span>Name: {popupContent.properties.name || 'Неизвестно'}</span>
+                <span>Width: {popupContent.properties.width || 'Неизвестно'}</span>
+                <span>Create date: {popupContent?.properties.create_date ?? 'Неизвестно'}</span>
+                <span>Delete date: {popupContent.properties.delete_date ?? 'Неизвестно'}</span>
+              </>
+            )}
           </div>
         </div>
       )}
-      {/* <Dialog open>
-        <DialogContent className="h-full w-full max-w-[900px] gap-0 border-0 p-4 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100">
+
+      <Dialog open={dialogIsOpen} onOpenChange={() => setDialogIsOpen(false)}>
+        <DialogContent className="h-[90%] w-full max-w-full p-0 md:max-w-[90%]">
           <Panorama />
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
     </div>
   );
 }

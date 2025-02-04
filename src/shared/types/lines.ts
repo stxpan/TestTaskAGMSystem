@@ -3,7 +3,7 @@ interface Geometry {
   coordinates: [number, number, number][];
 }
 
-export interface Properties {
+export interface LinesProperties {
   roadid: string;
   road_code: number;
   km_beg: number;
@@ -28,7 +28,7 @@ interface Features {
   has_files: boolean;
   has_images: boolean;
   geometry: Geometry;
-  properties: Properties;
+  properties: LinesProperties;
 }
 
 export interface Lines {
